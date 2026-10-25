@@ -103,6 +103,14 @@ public final class RigJsonLoader extends SimpleJsonResourceReloadListener {
             b.constraints(cs.toArray(new JointConstraint[0]));
         }
 
+        if (o.has("renderer")) {
+            JsonObject r = o.getAsJsonObject("renderer");
+            ResourceLocation rid = ConstraintParsers.id(Json.s(r, "type", ""));
+            var rf = JointedApi.rendererFactory(rid);
+            if (rf == null) throw new IllegalArgumentException("unknown renderer type '" + rid + "'");
+            b.renderer(rf.apply(r));
+        }
+
         JsonObject t = o.getAsJsonObject("target");
         if (t == null) throw new IllegalArgumentException("limb '" + name + "' has no 'target'");
         ResourceLocation tid = ConstraintParsers.id(Json.s(t, "type", ""));
