@@ -1,6 +1,7 @@
 // immutable description of one ik limb bound to a chain of model parts
 package k.jointed.api;
 
+import k.jointed.client.render.NodeRenderer;
 import k.jointed.core.constraint.JointConstraint;
 import k.jointed.core.math.V3;
 import k.jointed.core.solver.SolverSettings;
@@ -28,6 +29,8 @@ public final class LimbDefinition {
     public final double fade;
     // true constraints are measured from the part's initial baked rotation false from zero rotation
     public final boolean restFromInitialPose;
+    // optional, draws a custom shape through the solved nodes
+    public final NodeRenderer renderer;
 
     private LimbDefinition(Builder b) {
         if (b.parts.isEmpty()) throw new IllegalArgumentException("limb '" + b.name + "' has no parts");
@@ -46,6 +49,7 @@ public final class LimbDefinition {
         this.smoothing = b.smoothing;
         this.fade = b.fade;
         this.restFromInitialPose = b.restFromInitialPose;
+        this.renderer = b.renderer;
     }
 
     public static Builder builder(String name) {
@@ -64,6 +68,7 @@ public final class LimbDefinition {
         private double smoothing = 0.0;
         private double fade = 0.08;
         private boolean restFromInitialPose = true;
+        private NodeRenderer renderer;
 
         private Builder(String name) {
             this.name = name;
@@ -116,6 +121,11 @@ public final class LimbDefinition {
 
         public Builder restFromInitialPose(boolean v) {
             this.restFromInitialPose = v;
+            return this;
+        }
+
+        public Builder renderer(NodeRenderer r) {
+            this.renderer = r;
             return this;
         }
 
