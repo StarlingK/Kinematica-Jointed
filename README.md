@@ -1,4 +1,4 @@
-# Jointed
+# Kinematica: Jointed
 Kinematics framework and core mod for Minecraft.
 
 This was originally going to be part of a Tokyo Ghoul mod for minecraft, that used IK Kagunes. 
