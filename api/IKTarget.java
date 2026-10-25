@@ -3,7 +3,7 @@ package k.jointed.api;
 
 import k.jointed.core.math.V3;
 
-// target provider return value per limb and frame including position space pole and weight
+// a resolved ik target: position, optional pole, space, and blend weight
 public record IKTarget(V3 position, TargetSpace space, V3 pole, double weight) {
 
     public static IKTarget world(V3 position) {
