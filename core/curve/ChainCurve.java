@@ -83,7 +83,8 @@ public final class ChainCurve {
         return out;
     }
 
-    // total arc length of the sampled curve.    public static double length(Sample[] s) {
+    // total arc length of the sampled curve
+    public static double length(Sample[] s) {
         double l = 0;
         for (int i = 1; i < s.length; i++) l += s[i].pos.distance(s[i - 1].pos);
         return l;
