@@ -37,6 +37,15 @@ final class Json {
         return new V3(a.get(0).getAsDouble(), a.get(1).getAsDouble(), a.get(2).getAsDouble());
     }
 
+    // accepts "#RRGGBB" or "#AARRGGBB"
+    static int color(JsonObject o, String key, int def) {
+        JsonElement e = o.get(key);
+        if (e == null || e.isJsonNull()) return def;
+        String s = e.getAsString().replace("#", "");
+        long v = Long.parseLong(s, 16);
+        return s.length() <= 6 ? (int) (0xFF000000L | v) : (int) v;
+    }
+
     static double[] pair(JsonObject o, String key, double[] def) {
         JsonElement e = o.get(key);
         if (e == null || !e.isJsonArray()) return def;
