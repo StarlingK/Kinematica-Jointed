@@ -2,6 +2,10 @@
 package k.jointed.api;
 
 import com.google.gson.JsonObject;
+import k.jointed.client.render.DebugState;
+import k.jointed.client.render.NodeRenderer;
+import k.jointed.client.render.WorldChain;
+import k.jointed.client.render.WorldChains;
 import k.jointed.client.rig.FirstPersonRig;
 import k.jointed.client.rig.RigManager;
 import k.jointed.core.constraint.JointConstraint;
@@ -22,6 +26,7 @@ public final class JointedApi {
 
     private static final Map<ResourceLocation, Function<JsonObject, TargetProvider>> TARGET_FACTORIES = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, Function<JsonObject, JointConstraint>> CONSTRAINT_FACTORIES = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, Function<JsonObject, NodeRenderer>> RENDERER_FACTORIES = new ConcurrentHashMap<>();
 
     // rigs
 
@@ -62,6 +67,31 @@ public final class JointedApi {
 
     public static Function<JsonObject, JointConstraint> constraintFactory(ResourceLocation id) {
         return CONSTRAINT_FACTORIES.get(id);
+    }
+
+    // makes id usable as a limb renderer type in rig JSON files
+    public static void registerRendererType(ResourceLocation id, Function<JsonObject, NodeRenderer> factory) {
+        RENDERER_FACTORIES.put(id, factory);
+    }
+
+    public static Function<JsonObject, NodeRenderer> rendererFactory(ResourceLocation id) {
+        return RENDERER_FACTORIES.get(id);
+    }
+
+    // world chains and debug
+
+    // a chain that lives in the world instead of on a model, ticked and drawn until removed
+    public static WorldChain addWorldChain(WorldChain chain) {
+        WorldChains.add(chain);
+        return chain;
+    }
+
+    public static void removeWorldChain(WorldChain chain) {
+        WorldChains.remove(chain);
+    }
+
+    public static void setDebugDrawing(boolean on) {
+        DebugState.enabled = on;
     }
 
     // first person
