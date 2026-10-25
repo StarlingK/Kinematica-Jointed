@@ -39,6 +39,9 @@ public final class LimbRuntime {
     private V3 lastPos;
     private V3 lastPole;
     private float[][] saved;
+    private V3[] renderPoints;
+    private V3 debugTarget;
+    private V3 debugPole;
     private boolean applied;
 
     LimbRuntime(String key, LimbDefinition def) {
@@ -49,6 +52,19 @@ public final class LimbRuntime {
     // the solved chain in limb space (model pixels) from the last frame, or null for debug drawing
     public IKChain chain() {
         return chain;
+    }
+
+    // chain points in model pixels, ready for the render layer, or null before the first frame
+    public V3[] renderPoints() {
+        return renderPoints;
+    }
+
+    public V3 debugTarget() {
+        return debugTarget;
+    }
+
+    public V3 debugPole() {
+        return debugPole;
     }
 
     public boolean isBroken() {
@@ -147,6 +163,10 @@ public final class LimbRuntime {
             chain.setLocal(i, anim[i]);
         }
 
+        capture(aRot, aPos);
+        debugTarget = null;
+        debugPole = null;
+
         TargetContext ctx = new TargetContext(entity, partial, def.name, space, ctl);
         ctx.rootModel = aPos.add(aRot.rotate(chain.rootPosition()));
         ctx.animatedTipModel = aPos.add(aRot.rotate(chain.tipPosition()));
@@ -163,10 +183,14 @@ public final class LimbRuntime {
             if (posModel == null) {
                 target = null;
             } else {
+                debugTarget = posModel;
                 posLimb = aRot.inverse().rotate(posModel.sub(aPos));
                 if (target.pole() != null) {
                     V3 poleModel = ctx.toModel(target.pole(), target.space());
-                    if (poleModel != null) poleLimb = aRot.inverse().rotate(poleModel.sub(aPos));
+                    if (poleModel != null) {
+                        debugPole = poleModel;
+                        poleLimb = aRot.inverse().rotate(poleModel.sub(aPos));
+                    }
                 }
                 lastPos = posLimb;
                 lastPole = poleLimb;
@@ -202,14 +226,24 @@ public final class LimbRuntime {
         }
         for (int i = 0; i < k; i++) {
             Quat l = Quat.slerp(anim[i], chain.local(i), fade);
+            chain.setLocal(i, l);
             double[] e = l.toEulerZYX();
             ModelPart p = parts[i];
             p.xRot = (float) e[0];
             p.yRot = (float) e[1];
             p.zRot = (float) e[2];
         }
+        capture(aRot, aPos);
         applied = true;
         return true;
+    }
+
+    // the chain is in limb space, ancestors move it into the model space the render layer draws in
+    private void capture(Quat aRot, V3 aPos) {
+        V3[] p = chain.points();
+        V3[] out = new V3[p.length];
+        for (int i = 0; i < p.length; i++) out[i] = aPos.add(aRot.rotate(p[i]));
+        renderPoints = out;
     }
 
     void restore() {
