@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "k.jointed.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "LivingEntityRendererMixin",
+    "PlayerRendererMixin",
+    "ModelPartAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

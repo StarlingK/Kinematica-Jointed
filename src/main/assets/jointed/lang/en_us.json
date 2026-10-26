@@ -1,0 +1,8 @@
+{
+  "jointed.command.debug.on": "Jointed debug drawing enabled",
+  "jointed.command.debug.off": "Jointed debug drawing disabled",
+  "jointed.command.demo.started": "Started Jointed demo: %s",
+  "jointed.command.demo.stopped": "Stopped Jointed demo: %s",
+  "jointed.command.demo.unknown": "Unknown demo '%s'. Available: tentacle, aim, feet",
+  "jointed.command.stats": "Jointed: %s rig registrations, %s tracked entities, %s world chains"
+}

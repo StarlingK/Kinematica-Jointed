@@ -1,0 +1,16 @@
+.gradle/
+build/
+run/
+repo/
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+eclipse/
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+src/generated/resources/.cache/
