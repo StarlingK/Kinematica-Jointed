@@ -119,7 +119,7 @@ public final class TubeRenderer implements NodeRenderer {
     public void render(ChainRenderContext ctx) {
         if (ctx.nodeCount() < 2) return;
         ChainCurve.Sample[] s = ctx.samples(subdivisions);
-        VertexConsumer vc = ctx.buffers().getBuffer(renderType.apply(texture));
+        VertexConsumer vc = ctx.buffers().getBuffer(RenderUtil.type(renderType, texture));
         PoseStack.Pose pose = ctx.poseStack().last();
         int light = fullbright ? LightTexture.FULL_BRIGHT : ctx.light();
         int overlay = ctx.overlay();
@@ -141,8 +141,8 @@ public final class TubeRenderer implements NodeRenderer {
         }
 
         for (int k = 0; k + 1 < s.length; k++) {
-            int c0 = RenderUtil.lerpColor(colorStart, colorEnd, s[k].t);
-            int c1 = RenderUtil.lerpColor(colorStart, colorEnd, s[k + 1].t);
+            int c0 = RenderUtil.ghost(RenderUtil.lerpColor(colorStart, colorEnd, s[k].t));
+            int c1 = RenderUtil.ghost(RenderUtil.lerpColor(colorStart, colorEnd, s[k + 1].t));
             float v0 = (float) (s[k].t * totalLength) * vScale;
             float v1 = (float) (s[k + 1].t * totalLength) * vScale;
             for (int j = 0; j < sides; j++) {
@@ -156,9 +156,9 @@ public final class TubeRenderer implements NodeRenderer {
         }
 
         if (caps) {
-            cap(vc, pose, s[0], ring[0], s[0].tangent.negate(), colorStart, light, overlay);
+            cap(vc, pose, s[0], ring[0], s[0].tangent.negate(), RenderUtil.ghost(colorStart), light, overlay);
             int last = s.length - 1;
-            cap(vc, pose, s[last], ring[last], s[last].tangent, colorEnd, light, overlay);
+            cap(vc, pose, s[last], ring[last], s[last].tangent, RenderUtil.ghost(colorEnd), light, overlay);
         }
     }
 

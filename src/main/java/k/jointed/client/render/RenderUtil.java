@@ -51,4 +51,15 @@ public final class RenderUtil {
         int b = (int) Math.round((c0 & 255) * (1 - t) + (c1 & 255) * t);
         return argb(a, r, g, b);
     }
+
+
+    public static int ghost(int color) {
+        if (!DebugState.enabled) return color;
+        int a = (int) (((color >>> 24) & 255) * 0.35);
+        return (a << 24) | (color & 0xFFFFFF);
+    }
+
+    public static net.minecraft.client.renderer.RenderType type(java.util.function.Function<net.minecraft.resources.ResourceLocation, net.minecraft.client.renderer.RenderType> normal, net.minecraft.resources.ResourceLocation texture) {
+        return DebugState.enabled ? net.minecraft.client.renderer.RenderType.entityTranslucent(texture) : normal.apply(texture);
+    }
 }

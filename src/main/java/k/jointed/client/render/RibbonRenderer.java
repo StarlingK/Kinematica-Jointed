@@ -42,7 +42,7 @@ public final class RibbonRenderer implements NodeRenderer {
     public void render(ChainRenderContext ctx) {
         if (ctx.nodeCount() < 2) return;
         ChainCurve.Sample[] s = ctx.samples(subdivisions);
-        VertexConsumer vc = ctx.buffers().getBuffer(renderType.apply(texture));
+        VertexConsumer vc = ctx.buffers().getBuffer(RenderUtil.type(renderType, texture));
         PoseStack.Pose pose = ctx.poseStack().last();
         int light = fullbright ? LightTexture.FULL_BRIGHT : ctx.light();
         double total = ChainCurve.length(s);
@@ -57,8 +57,8 @@ public final class RibbonRenderer implements NodeRenderer {
             V3 b0 = b.pos.add(b.binormal.scale(-wb));
             V3 b1 = b.pos.add(b.binormal.scale(wb));
             V3 n = a.normal;
-            int ca = RenderUtil.lerpColor(colorStart, colorEnd, a.t);
-            int cb = RenderUtil.lerpColor(colorStart, colorEnd, b.t);
+            int ca = RenderUtil.ghost(RenderUtil.lerpColor(colorStart, colorEnd, a.t));
+            int cb = RenderUtil.ghost(RenderUtil.lerpColor(colorStart, colorEnd, b.t));
             float va = (float) (a.t * total) * vScale;
             float vb = (float) (b.t * total) * vScale;
             // drawn twice with flipped normals so it shows from both sides
