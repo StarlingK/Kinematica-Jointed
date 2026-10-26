@@ -47,11 +47,13 @@ JointedApi.registerRig(
 
 ## Documentation
 
-| [Getting started](docs/getting-started.md) Adding Jointed to your mod, first rig, building this repository |
-| [Concepts](docs/concepts.md) IK explained for people who have never used it before, coordinate spaces |
-| [Core API](docs/core-api.md) Chains, goals, solvers, constraints, physics, curves |
-| [Entity rigs](docs/entity-rigs.md) Rigs, limbs, targets, events, first person, full JSON reference |
-| [Rendering](docs/rendering.md) Custom textures, shapes and render types for the nodes; or writing your own renderer |
-| [World and block chains](docs/world-and-block-chains.md) Free-standing chains and block entity chains |
-| [Cookbook](docs/cookbook.md) Worked examples |
-| [Debugging and limits](docs/debugging.md) Commands, config, troubleshooting, known limits |
+| Topic | Description |
+| :--- | :--- |
+| [Getting started](docs/getting-started.md) | Adding Jointed to your mod, first rig, building this repository |
+| [Concepts](docs/concepts.md) | IK explained for people who have never used it before, coordinate spaces |
+| [Core API](docs/core-api.md) | Chains, goals, solvers, constraints, physics, curves |
+| [Entity rigs](docs/entity-rigs.md) | Rigs, limbs, targets, events, first person, full JSON reference |
+| [Rendering](docs/rendering.md) | Custom textures, shapes and render types for the nodes; or writing your own renderer |
+| [World and block chains](docs/world-and-block-chains.md) | Free-standing chains and block entity chains |
+| [Cookbook](docs/cookbook.md) | Worked examples |
+| [Debugging and limits](docs/debugging.md) | Commands, config, troubleshooting, known limits |
