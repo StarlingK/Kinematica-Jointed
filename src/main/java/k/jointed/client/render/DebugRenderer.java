@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import k.jointed.core.math.V3;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 
 public final class DebugRenderer {
     private DebugRenderer() {}
@@ -30,7 +29,7 @@ public final class DebugRenderer {
     }
 
     public static void chain(PoseStack stack, MultiBufferSource buffers, V3[] points, V3 target, V3 pole) {
-        VertexConsumer vc = buffers.getBuffer(RenderType.lines());
+        VertexConsumer vc = buffers.getBuffer(DebugTypes.LINES);
         PoseStack.Pose pose = stack.last();
         for (int i = 0; i + 1 < points.length; i++) line(vc, pose, points[i], points[i + 1], BONE);
         for (V3 p : points) cross(vc, pose, p, 0.03, JOINT);
