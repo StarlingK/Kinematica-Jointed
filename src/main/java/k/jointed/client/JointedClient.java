@@ -30,7 +30,7 @@ public class JointedClient {
         BuiltinRenderers.registerAll();
 
         modBus.addListener(JointedClient::onRegisterReloadListeners);
-        modBus.addListener((EntityRenderersEvent.AddLayers event) -> ChainFeatureLayer.onAddLayers(event));
+        modBus.addListener(ChainFeatureLayer::onAddLayers);
 
         NeoForge.EVENT_BUS.addListener(WorldChains::onClientTick);
         NeoForge.EVENT_BUS.addListener(WorldChains::onRenderLevel);
