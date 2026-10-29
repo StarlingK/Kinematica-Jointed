@@ -1,4 +1,3 @@
-// render type for debug lines that ignores depth so they show through solid and see-through geometry
 package k.jointed.client.render;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -22,7 +21,22 @@ public final class DebugTypes extends RenderStateShard {
             false,
             RenderType.CompositeState.builder()
                     .setShaderState(RENDERTYPE_LINES_SHADER)
-                    .setLineState(new LineStateShard(OptionalDouble.of(2.5)))
+                    .setLineState(new LineStateShard(OptionalDouble.of(2.0)))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setDepthTestState(NO_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setCullState(NO_CULL)
+                    .createCompositeState(false));
+
+    public static final RenderType FACES = RenderType.create(
+            "jointed_debug_faces",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.TRIANGLES,
+            1536,
+            false,
+            true,
+            RenderType.CompositeState.builder()
+                    .setShaderState(POSITION_COLOR_SHADER)
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                     .setDepthTestState(NO_DEPTH_TEST)
                     .setWriteMaskState(COLOR_WRITE)
