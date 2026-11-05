@@ -11,8 +11,6 @@ import java.lang.ref.WeakReference;
 import java.util.List;
 
 public final class RigInstance {
-    private final LivingEntity entity;
-    private final IKController controller;
     private int version = -1;
     private WeakReference<EntityModel<?>> model = new WeakReference<>(null);
     private List<LimbRuntime> limbs = List.of();
