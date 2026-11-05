@@ -16,16 +16,13 @@ public final class RigInstance {
     private List<LimbRuntime> limbs = List.of();
     private boolean applied;
 
-    RigInstance(LivingEntity entity, IKController controller) {
-        this.entity = entity;
-        this.controller = controller;
-    }
+     RigInstance() {}
 
     public List<LimbRuntime> limbs() {
         return limbs;
     }
 
-    private void ensure(EntityModel<?> m) {
+    private void ensure(LivingEntity entity, EntityModel<?> m) {
         int v = RigManager.version();
         if (v != version || model.get() != m) {
             limbs = RigManager.createLimbs(entity);
@@ -34,14 +31,14 @@ public final class RigInstance {
         }
     }
 
-    public boolean hasLimbs(EntityModel<?> m) {
-        ensure(m);
+    public boolean hasLimbs(LivingEntity entity, EntityModel<?> m) {
+        ensure(entity, m);
         return !limbs.isEmpty();
     }
 
-    public void apply(EntityModel<?> m, PoseStack stack, float partial) {
-        ensure(m);
-        if (limbs.isEmpty() || !controller.enabled()) return;
+    public void markStale() {
+        for (LimbRuntime l : limbs) l.markStale();
+        }
         var camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         ModelSpace space = ModelSpace.forEntity(entity, partial, stack, camera);
         boolean any = false;
