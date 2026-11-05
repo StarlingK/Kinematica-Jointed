@@ -69,21 +69,23 @@ public final class RigManager {
 
     public static RigInstance instanceFor(LivingEntity e, net.minecraft.client.model.EntityModel<?> model) {
         if (REGISTRATIONS.isEmpty()) return null;
-        RigInstance inst = INSTANCES.get(e);   
-            if (inst == null) {
+        RigInstance inst = INSTANCES.get(e);
+        if (inst == null) {
             inst = new RigInstance();
             INSTANCES.put(e, inst);
         }
         return inst.hasLimbs(e, model) ? inst : null;
     }
-        public static void clear() {
-             INSTANCES.clear();
-            CONTROLLERS.clear();
-        }
-    
-        public static void forget(LivingEntity e) {
-            INSTANCES.remove(e);
-            CONTROLLERS.remove(e);
+
+    public static void clear() {
+        INSTANCES.clear();
+        CONTROLLERS.clear();
+    }
+
+    public static void forget(LivingEntity e) {
+        INSTANCES.remove(e);
+        CONTROLLERS.remove(e);
+    }
 
     public static RigInstance peek(LivingEntity e) {
         return INSTANCES.get(e);

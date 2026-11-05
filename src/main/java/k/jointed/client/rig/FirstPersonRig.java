@@ -10,6 +10,7 @@ import k.jointed.core.math.MathUtil;
 import k.jointed.core.math.Quat;
 import k.jointed.core.math.V3;
 import k.jointed.core.solver.FabrikSolver;
+import k.jointed.core.solver.SolverSettings;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
@@ -26,15 +27,19 @@ public final class FirstPersonRig {
     public record Arm(TargetProvider target, double reachPixels, double weight) {}
 
     private static final Map<HumanoidArm, Arm> ARMS = new EnumMap<>(HumanoidArm.class);
+    private static final Map<HumanoidArm, IKChain> CHAINS = new EnumMap<>(HumanoidArm.class);
+    private static final SolverSettings SETTINGS = new SolverSettings().tolerance(0.01);
     private static ModelPart savedPart;
     private static final float[] saved = new float[3];
 
     public static void register(HumanoidArm arm, Arm def) {
         ARMS.put(arm, def);
+        CHAINS.remove(arm);
     }
 
     public static void unregister(HumanoidArm arm) {
         ARMS.remove(arm);
+        CHAINS.remove(arm);
     }
 
     // called just before the arm model is drawn in the first-person view
@@ -56,10 +61,15 @@ public final class FirstPersonRig {
             V3 pos = ctx.toModel(target.position(), target.space());
             if (pos == null) return;
 
-            IKChain chain = IKChain.builder().root(ctx.rootModel).bone(new V3(0, def.reachPixels(), 0)).build();
+            IKChain chain = CHAINS.get(which);
+            if (chain == null || chain.boneLength(0) != def.reachPixels()) {
+                chain = IKChain.builder().root(ctx.rootModel).bone(new V3(0, def.reachPixels(), 0)).build();
+                CHAINS.put(which, chain);
+            }
+            chain.setRoot(ctx.rootModel, Quat.IDENTITY);
             chain.setLocal(0, Quat.fromEulerZYX(armPart.xRot, armPart.yRot, armPart.zRot));
             Quat anim = chain.local(0);
-            FabrikSolver.INSTANCE.solve(chain, new k.jointed.core.solver.SolverSettings().tolerance(0.01),
+            FabrikSolver.INSTANCE.solve(chain, SETTINGS,
                     k.jointed.core.solver.IKGoal.tip(pos));
             double w = MathUtil.clamp(def.weight() * target.weight() * ClientConfig.GLOBAL_WEIGHT.get(), 0, 1);
             Quat result = Quat.slerp(anim, chain.local(0), w);

@@ -18,6 +18,16 @@ public final class RenderUtil {
                 .setNormal(pose, (float) normal.x, (float) normal.y, (float) normal.z);
     }
 
+    public static void vertex(VertexConsumer vc, PoseStack.Pose pose, double px, double py, double pz,
+                              double nx, double ny, double nz, float u, float v, int argb, int light, int overlay) {
+        vc.addVertex(pose, (float) px, (float) py, (float) pz)
+                .setColor(argb)
+                .setUv(u, v)
+                .setOverlay(overlay)
+                .setLight(light)
+                .setNormal(pose, (float) nx, (float) ny, (float) nz);
+    }
+
     // triangles are done by repeating a corner
     public static void quad(VertexConsumer vc, PoseStack.Pose pose, V3 a, V3 b, V3 c, V3 d, V3 normal, int argb,
                             int light, int overlay) {

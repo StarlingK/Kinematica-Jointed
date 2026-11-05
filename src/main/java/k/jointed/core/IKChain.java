@@ -35,7 +35,7 @@ public final class IKChain {
     private final V3[] pos;
     private final Quat[] frame;
     private V3 tip = V3.ZERO;
-    private boolean dirty = true;
+    private int dirtyFrom = 0;
 
     private IKChain(List<V3> bones, List<JointConstraint> constraints, List<Quat> rests, V3 rootPos, Quat rootRot) {
         this.n = bones.size();
@@ -140,7 +140,7 @@ public final class IKChain {
     public void setRoot(V3 position, Quat rotation) {
         this.rootPos = position;
         this.rootRot = rotation;
-        dirty = true;
+        dirtyFrom = 0;
     }
 
     public void setRootPosition(V3 position) {
@@ -153,7 +153,7 @@ public final class IKChain {
 
     public void setBone(int i, V3 vector) {
         setBoneInternal(i, vector);
-        dirty = true;
+        dirtyFrom = Math.min(dirtyFrom, i);
     }
 
     public double boneLength(int i) {
@@ -212,7 +212,7 @@ public final class IKChain {
 
     public void setLocal(int i, Quat q) {
         local[i] = q.normalize();
-        dirty = true;
+        dirtyFrom = Math.min(dirtyFrom, i);
     }
 
   // deviation of joint i from its rest rotation: rest^-1 * local
@@ -229,7 +229,7 @@ public final class IKChain {
         Quat d = delta(i);
         Quat c = constraint[i].constrain(d, axis[i]);
         local[i] = rest[i].mul(c).normalize();
-        dirty = true;
+        dirtyFrom = Math.min(dirtyFrom, i);
     }
 
     public void constrainAll() {
@@ -248,7 +248,7 @@ public final class IKChain {
 
     public void resetToRest() {
         for (int i = 0; i < n; i++) local[i] = rest[i];
-        dirty = true;
+        dirtyFrom = 0;
     }
 
     public Quat[] copyLocals() {
@@ -258,24 +258,25 @@ public final class IKChain {
     public void setLocals(Quat[] q) {
         if (q.length != n) throw new IllegalArgumentException("expected " + n + " rotations, got " + q.length);
         for (int i = 0; i < n; i++) local[i] = q[i].normalize();
-        dirty = true;
+        dirtyFrom = 0;
     }
 
     // forward kinematics(the fun part)
 
     // recomputes cached world data if a setter invalidated it. called lazily by the getters below
     public void updateFK() {
-        if (!dirty) return;
-        Quat f = rootRot;
-        V3 p = rootPos;
-        for (int i = 0; i < n; i++) {
+        if (dirtyFrom >= n) return;
+        int k = dirtyFrom;
+        Quat f = k == 0 ? rootRot : frame[k - 1];
+        V3 p = k == 0 ? rootPos : pos[k - 1].add(frame[k - 1].rotate(bone[k - 1]));
+        for (int i = k; i < n; i++) {
             pos[i] = p;
             f = f.mul(local[i]).normalize();
             frame[i] = f;
             p = p.add(f.rotate(bone[i]));
         }
         tip = p;
-        dirty = false;
+        dirtyFrom = n;
     }
 
 // world position of joint origin i (0..n-1)
@@ -333,7 +334,7 @@ public final class IKChain {
             c.local[i] = local[i];
             c.jointWeight[i] = jointWeight[i];
         }
-        c.dirty = true;
+        c.dirtyFrom = 0;
         return c;
     }
   // returns a string summary after updating forward kinematics (FK)

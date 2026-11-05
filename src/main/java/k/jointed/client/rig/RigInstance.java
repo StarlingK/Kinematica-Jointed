@@ -16,7 +16,7 @@ public final class RigInstance {
     private List<LimbRuntime> limbs = List.of();
     private boolean applied;
 
-     RigInstance() {}
+    RigInstance() {}
 
     public List<LimbRuntime> limbs() {
         return limbs;
@@ -38,6 +38,15 @@ public final class RigInstance {
 
     public void markStale() {
         for (LimbRuntime l : limbs) l.markStale();
+    }
+
+    public void apply(LivingEntity entity, EntityModel<?> m, PoseStack stack, float partial) {
+        ensure(entity, m);
+        if (limbs.isEmpty()) return;
+        IKController controller = RigManager.controller(entity);
+        if (!controller.enabled()) {
+            markStale();
+            return;
         }
         var camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         ModelSpace space = ModelSpace.forEntity(entity, partial, stack, camera);

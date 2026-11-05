@@ -22,10 +22,16 @@ import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.common.NeoForge;
 
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public final class LimbRuntime {
     public final String key;
     public final LimbDefinition def;
+
+    private static final Map<EntityModel<?>, Map<LimbDefinition, Binding>> BINDINGS = new WeakHashMap<>();
+
+    private record Binding(ModelPart[] parts, List<ModelPart> ancestors, Quat[] rests, String error) {}
 
     private ModelPart[] parts;
     private List<ModelPart> ancestors = List.of();
@@ -39,6 +45,8 @@ public final class LimbRuntime {
     private V3 lastPos;
     private V3 lastPole;
     private float[][] saved;
+    private Quat[] anim;
+    private V3[] renderBuf;
     private V3[] renderPoints;
     private V3 debugTarget;
     private V3 debugPole;
@@ -67,6 +75,12 @@ public final class LimbRuntime {
         return debugPole;
     }
 
+    void markStale() {
+        renderPoints = null;
+        debugTarget = null;
+        debugPole = null;
+    }
+
     public boolean isBroken() {
         return broken;
     }
@@ -77,35 +91,54 @@ public final class LimbRuntime {
         else Jointed.LOGGER.warn("Jointed limb '{}' disabled: {}", key, why);
     }
 
-    private void bind(EntityModel<?> model) {
+    private Binding resolve(EntityModel<?> model) {
         int k = def.parts.size();
         ModelPart[] resolved = new ModelPart[k];
         for (int i = 0; i < k; i++) {
             resolved[i] = ModelPartResolver.find(model, def.parts.get(i));
             if (resolved[i] == null) {
-                fail("model part '" + def.parts.get(i) + "' not found in " + model.getClass().getSimpleName(), null);
-                return;
+                return new Binding(null, List.of(), null,
+                        "model part '" + def.parts.get(i) + "' not found in " + model.getClass().getSimpleName());
             }
         }
         for (int i = 0; i + 1 < k; i++) {
             if (!ModelPartResolver.isDirectChild(resolved[i], resolved[i + 1])) {
-                fail("part '" + def.parts.get(i + 1) + "' is not a direct child of '" + def.parts.get(i) + "'", null);
-                return;
+                return new Binding(null, List.of(), null,
+                        "part '" + def.parts.get(i + 1) + "' is not a direct child of '" + def.parts.get(i) + "'");
             }
         }
+        Quat[] rests = new Quat[k];
+        for (int i = 0; i < k; i++) rests[i] = def.restFromInitialPose ? initialRotation(resolved[i]) : Quat.IDENTITY;
+        return new Binding(resolved, ModelPartResolver.ancestors(model, resolved[0]), rests, null);
+    }
+
+    private void bind(EntityModel<?> model) {
+        Map<LimbDefinition, Binding> perModel = BINDINGS.computeIfAbsent(model, m -> new WeakHashMap<>());
+        Binding bd = perModel.get(def);
+        if (bd == null) {
+            bd = resolve(model);
+            perModel.put(def, bd);
+            if (bd.error() != null) fail(bd.error(), null);
+        }
+        if (bd.error() != null) {
+            broken = true;
+            return;
+        }
+        int k = def.parts.size();
+        ModelPart[] resolved = bd.parts();
         parts = resolved;
-        ancestors = ModelPartResolver.ancestors(model, resolved[0]);
+        ancestors = bd.ancestors();
 
         IKChain.Builder b = IKChain.builder();
         for (int i = 0; i < k; i++) {
             V3 v = i < k - 1 ? new V3(resolved[i + 1].x, resolved[i + 1].y, resolved[i + 1].z) : def.tipOffset;
             var c = def.constraints.isEmpty() ? Constraints.NONE : def.constraints.get(i);
-            Quat rest = def.restFromInitialPose ? initialRotation(resolved[i]) : Quat.IDENTITY;
-            b.bone(v, c, rest);
+            b.bone(v, c, bd.rests()[i]);
         }
         chain = b.build();
         settings = def.settings.copy();
         saved = new float[k][3];
+        anim = new Quat[k];
         bound = true;
     }
 
@@ -155,7 +188,6 @@ public final class LimbRuntime {
 
         ModelPart p0 = parts[0];
         chain.setRoot(new V3(p0.x, p0.y, p0.z), Quat.IDENTITY);
-        Quat[] anim = new Quat[k];
         for (int i = 0; i < k; i++) {
             if (i < k - 1) chain.setBone(i, new V3(parts[i + 1].x, parts[i + 1].y, parts[i + 1].z));
             else chain.setBone(i, def.tipOffset);
@@ -240,10 +272,10 @@ public final class LimbRuntime {
 
     // the chain is in limb space, ancestors move it into the model space the render layer draws in
     private void capture(Quat aRot, V3 aPos) {
-        V3[] p = chain.points();
-        V3[] out = new V3[p.length];
-        for (int i = 0; i < p.length; i++) out[i] = aPos.add(aRot.rotate(p[i]));
-        renderPoints = out;
+        int n = chain.size() + 1;
+        if (renderBuf == null || renderBuf.length != n) renderBuf = new V3[n];
+        for (int i = 0; i < n; i++) renderBuf[i] = aPos.add(aRot.rotate(chain.pointPosition(i)));
+        renderPoints = renderBuf;
     }
 
     void restore() {

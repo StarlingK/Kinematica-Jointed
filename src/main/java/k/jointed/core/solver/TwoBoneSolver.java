@@ -73,7 +73,7 @@ public final class TwoBoneSolver implements IKSolver {
     // when that happens the bend direction is searched for around the root-to-target axis
     // reaching the target wins over following the pole, and among valid bends the one closest to the preferred one is used
     private static V3 bestBend(IKChain chain, V3 root, V3 dir, double eff, V3 base, double h, V3 preferred, double tol) {
-        IKChain scratch = chain.copy();
+        IKChain scratch = chain;
         V3 end = root.add(dir.scale(eff));
         V3 u = preferred;
         V3 v = dir.cross(u).normalize();

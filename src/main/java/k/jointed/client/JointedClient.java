@@ -9,6 +9,8 @@ import k.jointed.client.render.ChainFeatureLayer;
 import k.jointed.client.render.WorldChains;
 import k.jointed.client.rig.BuiltinTargets;
 import k.jointed.client.rig.RigJsonLoader;
+import k.jointed.client.rig.RigManager;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -36,6 +38,7 @@ public class JointedClient {
         NeoForge.EVENT_BUS.addListener(WorldChains::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(JointedCommands::onRegister);
         NeoForge.EVENT_BUS.addListener(JointedClient::onLogout);
+        NeoForge.EVENT_BUS.addListener(JointedClient::onEntityLeave);
     }
 
     private static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
@@ -46,5 +49,10 @@ public class JointedClient {
     private static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         WorldChains.clear();
         Demos.stopAll();
+        RigManager.clear();
+    }
+
+    private static void onEntityLeave(net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent event) {
+        if (event.getLevel().isClientSide() && event.getEntity() instanceof LivingEntity le) RigManager.forget(le);
     }
 }

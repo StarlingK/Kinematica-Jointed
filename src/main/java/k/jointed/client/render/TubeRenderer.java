@@ -125,51 +125,68 @@ public final class TubeRenderer implements NodeRenderer {
         int overlay = ctx.overlay();
 
         double totalLength = ChainCurve.length(s);
-        V3[][] ring = new V3[s.length][sides + 1];
-        V3[][] nrm = new V3[s.length][sides + 1];
+        int stride = (sides + 1) * 3;
+        double[] prevPos = new double[stride], curPos = new double[stride];
+        double[] prevNrm = new double[stride], curNrm = new double[stride];
+        double[] firstPos = new double[stride];
         double arc = 0;
         for (int k = 0; k < s.length; k++) {
             if (k > 0) arc += s[k].pos.distance(s[k - 1].pos);
             double r = radius.radius(s[k].t);
             double twist = twistPerBlock * arc;
+            V3 nm = s[k].normal, bn = s[k].binormal, sp = s[k].pos;
             for (int j = 0; j <= sides; j++) {
                 double phi = Math.PI * 2 * j / sides + twist;
-                V3 dir = s[k].normal.scale(Math.cos(phi)).add(s[k].binormal.scale(Math.sin(phi)));
-                nrm[k][j] = dir;
-                ring[k][j] = s[k].pos.add(dir.scale(r));
+                double cs = Math.cos(phi), sn = Math.sin(phi);
+                double dx = nm.x * cs + bn.x * sn;
+                double dy = nm.y * cs + bn.y * sn;
+                double dz = nm.z * cs + bn.z * sn;
+                int o = j * 3;
+                curNrm[o] = dx;
+                curNrm[o + 1] = dy;
+                curNrm[o + 2] = dz;
+                curPos[o] = sp.x + dx * r;
+                curPos[o + 1] = sp.y + dy * r;
+                curPos[o + 2] = sp.z + dz * r;
             }
-        }
-
-        for (int k = 0; k + 1 < s.length; k++) {
-            int c0 = RenderUtil.ghost(RenderUtil.lerpColor(colorStart, colorEnd, s[k].t));
-            int c1 = RenderUtil.ghost(RenderUtil.lerpColor(colorStart, colorEnd, s[k + 1].t));
-            float v0 = (float) (s[k].t * totalLength) * vScale;
-            float v1 = (float) (s[k + 1].t * totalLength) * vScale;
-            for (int j = 0; j < sides; j++) {
-                float u0 = uScale * j / sides;
-                float u1 = uScale * (j + 1) / sides;
-                RenderUtil.vertex(vc, pose, ring[k][j], nrm[k][j], u0, v0, c0, light, overlay);
-                RenderUtil.vertex(vc, pose, ring[k + 1][j], nrm[k + 1][j], u0, v1, c1, light, overlay);
-                RenderUtil.vertex(vc, pose, ring[k + 1][j + 1], nrm[k + 1][j + 1], u1, v1, c1, light, overlay);
-                RenderUtil.vertex(vc, pose, ring[k][j + 1], nrm[k][j + 1], u1, v0, c0, light, overlay);
+            if (k == 0) {
+                System.arraycopy(curPos, 0, firstPos, 0, stride);
+            } else {
+                int c0 = RenderUtil.ghost(RenderUtil.lerpColor(colorStart, colorEnd, s[k - 1].t));
+                int c1 = RenderUtil.ghost(RenderUtil.lerpColor(colorStart, colorEnd, s[k].t));
+                float v0 = (float) (s[k - 1].t * totalLength) * vScale;
+                float v1 = (float) (s[k].t * totalLength) * vScale;
+                for (int j = 0; j < sides; j++) {
+                    float u0 = uScale * j / sides;
+                    float u1 = uScale * (j + 1) / sides;
+                    int a = j * 3, b = a + 3;
+                    RenderUtil.vertex(vc, pose, prevPos[a], prevPos[a + 1], prevPos[a + 2], prevNrm[a], prevNrm[a + 1], prevNrm[a + 2], u0, v0, c0, light, overlay);
+                    RenderUtil.vertex(vc, pose, curPos[a], curPos[a + 1], curPos[a + 2], curNrm[a], curNrm[a + 1], curNrm[a + 2], u0, v1, c1, light, overlay);
+                    RenderUtil.vertex(vc, pose, curPos[b], curPos[b + 1], curPos[b + 2], curNrm[b], curNrm[b + 1], curNrm[b + 2], u1, v1, c1, light, overlay);
+                    RenderUtil.vertex(vc, pose, prevPos[b], prevPos[b + 1], prevPos[b + 2], prevNrm[b], prevNrm[b + 1], prevNrm[b + 2], u1, v0, c0, light, overlay);
+                }
             }
+            double[] t = prevPos; prevPos = curPos; curPos = t;
+            t = prevNrm; prevNrm = curNrm; curNrm = t;
         }
 
         if (caps) {
-            cap(vc, pose, s[0], ring[0], s[0].tangent.negate(), RenderUtil.ghost(colorStart), light, overlay);
+            cap(vc, pose, s[0], firstPos, s[0].tangent.negate(), RenderUtil.ghost(colorStart), light, overlay);
             int last = s.length - 1;
-            cap(vc, pose, s[last], ring[last], s[last].tangent, RenderUtil.ghost(colorEnd), light, overlay);
+            cap(vc, pose, s[last], prevPos, s[last].tangent, RenderUtil.ghost(colorEnd), light, overlay);
         }
     }
 
     // fan of degenerate quads from the centre to the ring
-    private void cap(VertexConsumer vc, PoseStack.Pose pose, ChainCurve.Sample end, V3[] ring, V3 normal, int color,
+    private void cap(VertexConsumer vc, PoseStack.Pose pose, ChainCurve.Sample end, double[] ring, V3 normal, int color,
                      int light, int overlay) {
+        V3 c = end.pos;
         for (int j = 0; j < sides; j++) {
-            RenderUtil.vertex(vc, pose, end.pos, normal, 0.5f, 0.5f, color, light, overlay);
-            RenderUtil.vertex(vc, pose, ring[j], normal, 0, 0, color, light, overlay);
-            RenderUtil.vertex(vc, pose, ring[j + 1], normal, 1, 0, color, light, overlay);
-            RenderUtil.vertex(vc, pose, end.pos, normal, 0.5f, 0.5f, color, light, overlay);
+            int a = j * 3, b = a + 3;
+            RenderUtil.vertex(vc, pose, c.x, c.y, c.z, normal.x, normal.y, normal.z, 0.5f, 0.5f, color, light, overlay);
+            RenderUtil.vertex(vc, pose, ring[a], ring[a + 1], ring[a + 2], normal.x, normal.y, normal.z, 0, 0, color, light, overlay);
+            RenderUtil.vertex(vc, pose, ring[b], ring[b + 1], ring[b + 2], normal.x, normal.y, normal.z, 1, 0, color, light, overlay);
+            RenderUtil.vertex(vc, pose, c.x, c.y, c.z, normal.x, normal.y, normal.z, 0.5f, 0.5f, color, light, overlay);
         }
     }
 }

@@ -11,19 +11,25 @@ import org.joml.Vector3f;
 
 public final class ModelSpace {
     private final Matrix4f toOuter;
-    private final Matrix4f toModel;
+    private Matrix4f toModel;
     private final Vec3 camera;
     private final Quaternionf cameraRotation;
+    private final Quaternionf cameraRotationInv;
     public final boolean worldValid;
     public final boolean firstPerson;
 
     private ModelSpace(Matrix4f pose, Vec3 camera, Quaternionf cameraRotation, boolean worldValid, boolean firstPerson) {
         this.toOuter = new Matrix4f(pose);
-        this.toModel = new Matrix4f(pose).invert();
         this.camera = camera;
         this.cameraRotation = cameraRotation;
+        this.cameraRotationInv = cameraRotation == null ? null : new Quaternionf(cameraRotation).conjugate();
         this.worldValid = worldValid;
         this.firstPerson = firstPerson;
+    }
+
+    private Matrix4f toModel() {
+        if (toModel == null) toModel = new Matrix4f(toOuter).invert();
+        return toModel;
     }
 
     public static ModelSpace forEntity(LivingEntity entity, float partial, PoseStack stack, Vec3 camera) {
@@ -41,8 +47,8 @@ public final class ModelSpace {
 
     public V3 worldToModel(V3 w) {
         Vector3f v = new Vector3f((float) (w.x - camera.x), (float) (w.y - camera.y), (float) (w.z - camera.z));
-        if (cameraRotation != null) new Quaternionf(cameraRotation).conjugate().transform(v);
-        toModel.transformPosition(v);
+        if (cameraRotationInv != null) cameraRotationInv.transform(v);
+        toModel().transformPosition(v);
         return new V3(v.x * 16.0, v.y * 16.0, v.z * 16.0);
     }
 
@@ -55,7 +61,7 @@ public final class ModelSpace {
 
     public V3 viewToModel(V3 view) {
         Vector3f v = new Vector3f((float) view.x, (float) view.y, (float) view.z);
-        toModel.transformPosition(v);
+        toModel().transformPosition(v);
         return new V3(v.x * 16.0, v.y * 16.0, v.z * 16.0);
     }
 }

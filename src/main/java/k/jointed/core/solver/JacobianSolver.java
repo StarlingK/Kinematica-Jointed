@@ -31,13 +31,25 @@ public final class JacobianSolver implements IKSolver {
         double lambda2 = baseLambda2;
         int rejected = 0;
 
+        double[][] J = new double[rows][cols];
+        double[] e = new double[rows];
+        double[][] A = new double[rows][rows];
+        double[][] Acopy = new double[rows][rows];
+        double[] ecopy = new double[rows];
+        double[] dTheta = new double[cols];
+        double[] v = s.restBias > 0 ? new double[cols] : null;
+        double[] jv = s.restBias > 0 ? new double[rows] : null;
+
         int it = 0;
         double err = maxError(chain, goals);
         double oriErr = oriGoal == null ? 0 : orientationError(chain, oriGoal).length();
         while ((err > s.tolerance || oriErr > 1e-3) && it < s.maxIterations) {
             chain.updateFK();
-            double[][] J = new double[rows][cols];
-            double[] e = new double[rows];
+            for (int r = 0; r < rows; r++) {
+                java.util.Arrays.fill(J[r], 0);
+                java.util.Arrays.fill(A[r], 0);
+            }
+            java.util.Arrays.fill(e, 0);
 
             for (int k = 0; k < g; k++) {
                 IKGoal goal = goals[k];
@@ -71,7 +83,6 @@ public final class JacobianSolver implements IKSolver {
                 }
             }
 
-            double[][] A = new double[rows][rows];
             for (int a = 0; a < rows; a++) {
                 for (int b = a; b < rows; b++) {
                     double sum = 0;
@@ -82,8 +93,9 @@ public final class JacobianSolver implements IKSolver {
                 A[a][a] += lambda2;
             }
 
-            double[] y = SolverSupport.solveLinear(copy(A), e.clone());
-            double[] dTheta = new double[cols];
+            for (int r = 0; r < rows; r++) System.arraycopy(A[r], 0, Acopy[r], 0, rows);
+            System.arraycopy(e, 0, ecopy, 0, rows);
+            double[] y = SolverSupport.solveLinear(Acopy, ecopy);
             for (int c = 0; c < cols; c++) {
                 double sum = 0;
                 for (int r = 0; r < rows; r++) sum += J[r][c] * y[r];
@@ -92,7 +104,7 @@ public final class JacobianSolver implements IKSolver {
 
             if (s.restBias > 0) {
                 // secondary task in the null space of the primary one: drift joints back towards rest
-                double[] v = new double[cols];
+                java.util.Arrays.fill(v, 0);
                 for (int i = 0; i < n; i++) {
                     V3 rv = chain.delta(i).log();
                     V3 world = chain.parentFrame(i).mul(chain.rest(i)).rotate(rv.negate());
@@ -100,13 +112,14 @@ public final class JacobianSolver implements IKSolver {
                     v[3 * i + 1] = world.y;
                     v[3 * i + 2] = world.z;
                 }
-                double[] jv = new double[rows];
+                java.util.Arrays.fill(jv, 0);
                 for (int r = 0; r < rows; r++) {
                     double sum = 0;
                     for (int c = 0; c < cols; c++) sum += J[r][c] * v[c];
                     jv[r] = sum;
                 }
-                double[] z = SolverSupport.solveLinear(copy(A), jv);
+                for (int r = 0; r < rows; r++) System.arraycopy(A[r], 0, Acopy[r], 0, rows);
+                double[] z = SolverSupport.solveLinear(Acopy, jv);
                 for (int c = 0; c < cols; c++) {
                     double sum = 0;
                     for (int r = 0; r < rows; r++) sum += J[r][c] * z[r];
@@ -149,12 +162,6 @@ public final class JacobianSolver implements IKSolver {
         J[row][jointCol + axis] = v.x * w;
         J[row + 1][jointCol + axis] = v.y * w;
         J[row + 2][jointCol + axis] = v.z * w;
-    }
-
-    private static double[][] copy(double[][] a) {
-        double[][] c = new double[a.length][];
-        for (int i = 0; i < a.length; i++) c[i] = a[i].clone();
-        return c;
     }
 
     private static double maxError(IKChain chain, IKGoal[] goals) {

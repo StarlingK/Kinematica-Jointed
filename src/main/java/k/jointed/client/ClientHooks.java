@@ -15,19 +15,30 @@ public final class ClientHooks {
     private static boolean warned;
 
     public static void afterSetupAnim(LivingEntity entity, EntityModel<?> model, PoseStack stack, float partialTick) {
-        if (!ClientConfig.ENABLED.get()) return;
         try {
+            if (!ClientConfig.ENABLED.get()) {
+                markStale(entity);
+                return;
+            }
             double max = ClientConfig.MAX_DISTANCE.get();
             var cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-            if (entity.distanceToSqr(cam) > max * max) return;
+            if (entity.distanceToSqr(cam) > max * max) {
+                markStale(entity);
+                return;
+            }
             RigInstance inst = RigManager.instanceFor(entity, model);
-            if (inst != null) inst.apply(model, stack, partialTick);
+            if (inst != null) inst.apply(entity, model, stack, partialTick);
         } catch (Throwable t) {
             if (!warned) {
                 warned = true;
                 Jointed.LOGGER.error("Jointed hook failed", t);
             }
         }
+    }
+
+    private static void markStale(LivingEntity entity) {
+        RigInstance i = RigManager.peek(entity);
+        if (i != null) i.markStale();
     }
 
     public static void afterRender(LivingEntity entity, EntityModel<?> model) {

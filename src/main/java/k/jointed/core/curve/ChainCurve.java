@@ -4,9 +4,6 @@ package k.jointed.core.curve;
 import k.jointed.core.math.Quat;
 import k.jointed.core.math.V3;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public final class ChainCurve {
     private ChainCurve() {}
 
@@ -38,8 +35,9 @@ public final class ChainCurve {
         if (points.length < 2) throw new IllegalArgumentException("need at least 2 points");
         int segs = points.length - 1;
         int sub = Math.max(1, subdivisions);
-        List<V3> pos = new ArrayList<>(segs * sub + 1);
-        List<Integer> boneOf = new ArrayList<>();
+        V3[] pos = new V3[segs * sub + 1];
+        int[] boneOf = new int[segs * sub + 1];
+        int idx = 0;
         for (int i = 0; i < segs; i++) {
             V3 p0 = points[Math.max(i - 1, 0)];
             V3 p1 = points[i];
@@ -47,22 +45,22 @@ public final class ChainCurve {
             V3 p3 = points[Math.min(i + 2, segs)];
             for (int k = 0; k < sub; k++) {
                 double u = k / (double) sub;
-                pos.add(catmull(p0, p1, p2, p3, u));
-                boneOf.add(i);
+                pos[idx] = catmull(p0, p1, p2, p3, u);
+                boneOf[idx++] = i;
             }
         }
-        pos.add(points[segs]);
-        boneOf.add(segs - 1);
+        pos[idx] = points[segs];
+        boneOf[idx] = segs - 1;
 
-        int count = pos.size();
+        int count = pos.length;
         double[] dist = new double[count];
-        for (int i = 1; i < count; i++) dist[i] = dist[i - 1] + pos.get(i).distance(pos.get(i - 1));
+        for (int i = 1; i < count; i++) dist[i] = dist[i - 1] + pos[i].distance(pos[i - 1]);
         double total = dist[count - 1];
 
         V3[] tan = new V3[count];
         for (int i = 0; i < count; i++) {
-            V3 a = pos.get(Math.max(i - 1, 0));
-            V3 b = pos.get(Math.min(i + 1, count - 1));
+            V3 a = pos[Math.max(i - 1, 0)];
+            V3 b = pos[Math.min(i + 1, count - 1)];
             tan[i] = b.sub(a).normalizeOr(i > 0 ? tan[i - 1] : V3.Y);
         }
 
@@ -78,7 +76,7 @@ public final class ChainCurve {
                 n = n.normalizeOr(tan[i].anyPerpendicular());
             }
             double t = total < V3.EPS ? 0 : dist[i] / total;
-            out[i] = new Sample(pos.get(i), tan[i], n, t, boneOf.get(i));
+            out[i] = new Sample(pos[i], tan[i], n, t, boneOf[i]);
         }
         return out;
     }
